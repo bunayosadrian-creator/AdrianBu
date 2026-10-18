@@ -33,7 +33,7 @@
         }
         input {
             padding: 8px;
-            width: 60%;
+            width: 50%;
             margin-right: 5px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -49,16 +49,16 @@
 </head>
 <body>
 
-    <h1>Student API Dashboard</h1>
+    <h1>Student API & Database Interface</h1>
 
-    <!-- Step 3: Student Information Section -->
+    <!-- Single Student Info -->
     <div class="card">
         <h2>Student Information</h2>
         <button onclick="loadStudent()">Load Student Information</button>
-        <div id="result" class="result-box">Click the button above to load data.</div>
+        <div id="result" class="result-box">Click button to load data.</div>
     </div>
 
-    <!-- Step 7: Greeting API Section -->
+    <!-- Greeting API -->
     <div class="card">
         <h2>Greeting API</h2>
         <input type="text" id="nameInput" placeholder="Enter your first name">
@@ -66,15 +66,22 @@
         <p id="greeting" class="result-box">Greeting message will appear here.</p>
     </div>
 
-    <!-- Additional Task: Custom API Endpoint Section -->
+    <!-- Step 8: Students from Database -->
     <div class="card">
-        <h2>Custom Endpoint (/course)</h2>
-        <button onclick="loadCourse()">Load Course Details</button>
-        <div id="courseResult" class="result-box">Click to fetch course information.</div>
+        <h2>Students from Database (/students)</h2>
+        <button onclick="loadStudents()">Load Students</button>
+        <div id="studentList" class="result-box">Click button to load database records.</div>
+    </div>
+
+    <!-- Additional Task: Filter Database Students by Year Level -->
+    <div class="card">
+        <h2>Filter Students by Year Level</h2>
+        <input type="number" id="yearInput" placeholder="Enter year level (e.g., 3)">
+        <button onclick="loadStudentsByYear()">Filter Students</button>
+        <div id="yearResult" class="result-box">Filtered records will appear here.</div>
     </div>
 
     <script>
-        // Step 3: Fetch Student Info
         function loadStudent() {
             fetch('/student')
                 .then(response => response.json())
@@ -91,7 +98,6 @@
                 });
         }
 
-        // Step 7: Fetch Greeting API
         function sayHello() {
             const name = document.getElementById('nameInput').value;
             fetch('/hello?name=' + encodeURIComponent(name))
@@ -104,19 +110,59 @@
                 });
         }
 
-        // Additional Task: Fetch Course Details
-        function loadCourse() {
-            fetch('/course')
+        // Step 8: Fetch All Students from Database
+        function loadStudents() {
+            fetch('/students')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('courseResult').innerHTML =
-                        '<p><b>Course Code:</b> ' + data.course_code + '</p>' +
-                        '<p><b>Course Title:</b> ' + data.course_title + '</p>' +
-                        '<p><b>Units:</b> ' + data.units + '</p>' +
-                        '<p><b>Status:</b> ' + data.status + '</p>';
+                    let output = '';
+                    data.forEach(student => {
+                        output +=
+                            '<p>' +
+                            '<b>' + student.student_id + '</b> - ' +
+                            student.name + ' | ' +
+                            student.program + ' | Year ' +
+                            student.year + ' | Section ' +
+                            student.section +
+                            '</p>';
+                    });
+                    document.getElementById('studentList').innerHTML = output;
                 })
                 .catch(error => {
-                    document.getElementById('courseResult').innerHTML = '<p>Unable to retrieve course data.</p>';
+                    document.getElementById('studentList').innerHTML =
+                        '<p>Unable to retrieve student records.</p>';
+                });
+        }
+
+        // Additional Task: Fetch Students Filtered by Year Level
+        function loadStudentsByYear() {
+            const year = document.getElementById('yearInput').value;
+            if (!year) {
+                document.getElementById('yearResult').innerText = 'Please enter a year level.';
+                return;
+            }
+            fetch('/students/year/' + encodeURIComponent(year))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        document.getElementById('yearResult').innerText = 'No records found for Year ' + year + '.';
+                        return;
+                    }
+                    let output = '';
+                    data.forEach(student => {
+                        output +=
+                            '<p>' +
+                            '<b>' + student.student_id + '</b> - ' +
+                            student.name + ' | ' +
+                            student.program + ' | Year ' +
+                            student.year + ' | Section ' +
+                            student.section +
+                            '</p>';
+                    });
+                    document.getElementById('yearResult').innerHTML = output;
+                })
+                .catch(error => {
+                    document.getElementById('yearResult').innerText = 'Unable to retrieve filtered records.';
                 });
         }
     </script>

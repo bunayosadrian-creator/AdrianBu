@@ -1,7 +1,7 @@
 import requests
 
 
-url = "https://adrianbu-1.onrender.com/student"
+url = "     "
 
 response = requests.get(url)
 

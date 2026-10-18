@@ -1,11 +1,10 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
 
-# Base Routes
 @app.route('/')
 def home():
-    return "Welcome to my updated API portfolio!"
+    return render_template('index.html')
 
 @app.route('/student')
 def get_student():
@@ -24,28 +23,14 @@ def say_hello():
         "message": f"Hello, {name}!"
     })
 
-# --- STEP 8: NEW ENDPOINT 1 (Custom Information) ---
-@app.route('/hobbies')
-def get_hobbies():
+# Custom endpoint for Additional Task
+@app.route('/course')
+def get_course():
     return jsonify({
-        "favorite_hobbies": ["Gaming", "Coding", "Basketball"],
-        "tech_stack": ["Python", "Flask", "Git"],
-        "status": "Currently learning web service deployment!"
-    })
-
-# --- STEP 8: NEW ENDPOINT 2 (Accepts input from URL like ?mood=motivated) ---
-@app.route('/quote')
-def get_quote():
-    mood = request.args.get('mood', 'happy').lower()
-    quotes = {
-        "happy": "Keep smiling, coding is fun!",
-        "motivated": "Code is like humor. When you have to explain it, it’s bad.",
-        "tired": "Take a rest! Even servers need rebooting sometimes."
-    }
-    quote_text = quotes.get(mood, "Stay positive and keep learning!")
-    return jsonify({
-        "requested_mood": mood,
-        "quote": quote_text
+        "course_code": "IT301",
+        "course_title": "Web Systems and Technologies",
+        "units": 3,
+        "status": "Enrolled"
     })
 
 if __name__ == '__main__':

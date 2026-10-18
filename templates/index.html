@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student API Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .card {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 8px 14px;
+            margin: 5px 0;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input {
+            padding: 8px;
+            width: 60%;
+            margin-right: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .result-box {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            background-color: #fafafa;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Student API Dashboard</h1>
+
+    <!-- Step 3: Student Information Section -->
+    <div class="card">
+        <h2>Student Information</h2>
+        <button onclick="loadStudent()">Load Student Information</button>
+        <div id="result" class="result-box">Click the button above to load data.</div>
+    </div>
+
+    <!-- Step 7: Greeting API Section -->
+    <div class="card">
+        <h2>Greeting API</h2>
+        <input type="text" id="nameInput" placeholder="Enter your first name">
+        <button onclick="sayHello()">Say Hello</button>
+        <p id="greeting" class="result-box">Greeting message will appear here.</p>
+    </div>
+
+    <!-- Additional Task: Custom API Endpoint Section -->
+    <div class="card">
+        <h2>Custom Endpoint (/course)</h2>
+        <button onclick="loadCourse()">Load Course Details</button>
+        <div id="courseResult" class="result-box">Click to fetch course information.</div>
+    </div>
+
+    <script>
+        // Step 3: Fetch Student Info
+        function loadStudent() {
+            fetch('/student')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('result').innerHTML =
+                        '<p><b>Student ID:</b> ' + data.student_id + '</p>' +
+                        '<p><b>Name:</b> ' + data.name + '</p>' +
+                        '<p><b>Program:</b> ' + data.program + '</p>' +
+                        '<p><b>Year:</b> ' + data.year + '</p>' +
+                        '<p><b>Section:</b> ' + data.section + '</p>';
+                })
+                .catch(error => {
+                    document.getElementById('result').innerHTML = '<p>Unable to retrieve data.</p>';
+                });
+        }
+
+        // Step 7: Fetch Greeting API
+        function sayHello() {
+            const name = document.getElementById('nameInput').value;
+            fetch('/hello?name=' + encodeURIComponent(name))
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('greeting').innerText = data.message;
+                })
+                .catch(error => {
+                    document.getElementById('greeting').innerText = 'Unable to retrieve greeting.';
+                });
+        }
+
+        // Additional Task: Fetch Course Details
+        function loadCourse() {
+            fetch('/course')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('courseResult').innerHTML =
+                        '<p><b>Course Code:</b> ' + data.course_code + '</p>' +
+                        '<p><b>Course Title:</b> ' + data.course_title + '</p>' +
+                        '<p><b>Units:</b> ' + data.units + '</p>' +
+                        '<p><b>Status:</b> ' + data.status + '</p>';
+                })
+                .catch(error => {
+                    document.getElementById('courseResult').innerHTML = '<p>Unable to retrieve course data.</p>';
+                });
+        }
+    </script>
+</body>
+</html>

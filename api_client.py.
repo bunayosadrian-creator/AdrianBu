@@ -1,0 +1,19 @@
+import requests
+
+
+url = "https://adrianbu-1.onrender.com/student"
+
+response = requests.get(url)
+
+
+if response.status_code == 200:
+    data = response.json()
+    
+   
+    print(" My 3 Endpoint Response ")
+    print("Student ID:", data.get("student_id"))
+    print("Name:", data.get("name"))
+    print("Program:", data.get("program"))
+else:
+    print("Request failed.")
+    print("Status Code:", response.status_code)

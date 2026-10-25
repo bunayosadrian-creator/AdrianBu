@@ -3,168 +3,333 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student API Interface</title>
+    <title>Student API & Classmate Integration</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: 40px auto;
+            max-width: 900px;
+            margin: 30px auto;
             padding: 20px;
-            background-color: #f9f9f9;
+            background-color: #f4f6f9;
         }
         .card {
             background: #ffffff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        .card-header {
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+        input {
+            padding: 8px;
+            width: 60%;
+            margin-right: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         button {
             padding: 8px 14px;
-            margin: 5px 0;
+            margin: 5px 4px 5px 0;
             cursor: pointer;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
         }
-        button:hover {
-            background-color: #0056b3;
-        }
-        input {
-            padding: 8px;
-            width: 50%;
-            margin-right: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
+        button:hover { background-color: #0056b3; }
+        button.btn-edit { background-color: #28a745; }
+        button.btn-edit:hover { background-color: #218838; }
+        button.btn-delete { background-color: #dc3545; }
+        button.btn-delete:hover { background-color: #c82333; }
+        button.btn-secondary { background-color: #6c757d; }
+        button.btn-secondary:hover { background-color: #5a6268; }
         .result-box {
             margin-top: 15px;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #cccccc;
             border-radius: 4px;
             background-color: #fafafa;
+        }
+        .record-item {
+            padding: 8px;
+            border-bottom: 1px solid #eeeeee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .record-item:last-child { border-bottom: none; }
+        .badge {
+            background-color: #17a2b8;
+            color: white;
+            padding: 3px 7px;
+            border-radius: 3px;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
 
-    <h1>Student API & Database Interface</h1>
+    <h1>Student API Dashboard</h1>
 
-    <!-- Single Student Info -->
+    <!-- 1. MANAGE LOCAL RECORDS (CREATE / UPDATE / DELETE) -->
     <div class="card">
-        <h2>Student Information</h2>
-        <button onclick="loadStudent()">Load Student Information</button>
-        <div id="result" class="result-box">Click button to load data.</div>
+        <h2 class="card-header">Manage Local Student Record (My Database)</h2>
+        <div class="form-group">
+            <label for="dbId">Database ID:</label>
+            <input type="number" id="dbId" placeholder="Required for Edit/Delete (e.g., 1)">
+        </div>
+        <div class="form-group">
+            <label for="studentId">Student ID:</label>
+            <input type="text" id="studentId" placeholder="e.g., 24-00246">
+        </div>
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" placeholder="e.g., Adrian Bunayos">
+        </div>
+        <div class="form-group">
+            <label for="program">Program:</label>
+            <input type="text" id="program" placeholder="e.g., BSIT">
+        </div>
+        <div class="form-group">
+            <label for="year">Year Level:</label>
+            <input type="number" id="year" placeholder="e.g., 3">
+        </div>
+        <div class="form-group">
+            <label for="section">Section:</label>
+            <input type="text" id="section" placeholder="e.g., A">
+        </div>
+
+        <button onclick="addStudent()">Add Student (POST)</button>
+        <button class="btn-edit" onclick="updateStudent()">Edit Student (PUT)</button>
+        <button class="btn-delete" onclick="deleteStudent()">Delete Student (DELETE)</button>
+
+        <div id="crudResult" class="result-box">API operation response will appear here.</div>
     </div>
 
-    <!-- Greeting API -->
+    <!-- 2. MY RECORDS SECTION -->
     <div class="card">
-        <h2>Greeting API</h2>
-        <input type="text" id="nameInput" placeholder="Enter your first name">
-        <button onclick="sayHello()">Say Hello</button>
-        <p id="greeting" class="result-box">Greeting message will appear here.</p>
+        <h2 class="card-header">My Records (Local Source)</h2>
+        <div class="form-group">
+            <input type="text" id="localSearchInput" placeholder="Search my records by name or student ID...">
+            <button onclick="searchMyRecords()">Search</button>
+            <button class="btn-secondary" onclick="loadMyRecords()">Refresh All</button>
+        </div>
+        
+        <div id="myRecordsList" class="result-box">Click "Refresh All" to load local database records.</div>
+        <div id="localDetailBox" class="result-box" style="display:none; background-color:#eef7ff;"></div>
     </div>
 
-    <!-- Step 8: Students from Database -->
+    <!-- 3. CLASSMATE'S RECORDS SECTION -->
     <div class="card">
-        <h2>Students from Database (/students)</h2>
-        <button onclick="loadStudents()">Load Students</button>
-        <div id="studentList" class="result-box">Click button to load database records.</div>
-    </div>
+        <h2 class="card-header">Classmate's Records (Remote Source - Read Only)</h2>
+        <div class="form-group">
+            <label for="classmateApiUrl">API URL:</label>
+            <input type="url" id="classmateApiUrl" value="https://wenmark.onrender.com/api/students" placeholder="https://wenmark.onrender.com/api/students" style="width:70%;">
+        </div>
+        <button onclick="fetchClassmateRecords()">Fetch Classmate Records</button>
 
-    <!-- Additional Task: Filter Database Students by Year Level -->
-    <div class="card">
-        <h2>Filter Students by Year Level</h2>
-        <input type="number" id="yearInput" placeholder="Enter year level (e.g., 3)">
-        <button onclick="loadStudentsByYear()">Filter Students</button>
-        <div id="yearResult" class="result-box">Filtered records will appear here.</div>
+        <div id="classmateList" class="result-box">Enter classmate API URL and click fetch.</div>
+        <div id="remoteDetailBox" class="result-box" style="display:none; background-color:#fff8ee;"></div>
     </div>
 
     <script>
-        function loadStudent() {
-            fetch('/student')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('result').innerHTML =
-                        '<p><b>Student ID:</b> ' + data.student_id + '</p>' +
-                        '<p><b>Name:</b> ' + data.name + '</p>' +
-                        '<p><b>Program:</b> ' + data.program + '</p>' +
-                        '<p><b>Year:</b> ' + data.year + '</p>' +
-                        '<p><b>Section:</b> ' + data.section + '</p>';
-                })
-                .catch(error => {
-                    document.getElementById('result').innerHTML = '<p>Unable to retrieve data.</p>';
-                });
+        let localStudentsData = [];
+        let classmateStudentsData = [];
+
+        function getFormData() {
+            return {
+                student_id: document.getElementById('studentId').value,
+                name: document.getElementById('name').value,
+                program: document.getElementById('program').value,
+                year: parseInt(document.getElementById('year').value) || 0,
+                section: document.getElementById('section').value
+            };
         }
 
-        function sayHello() {
-            const name = document.getElementById('nameInput').value;
-            fetch('/hello?name=' + encodeURIComponent(name))
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('greeting').innerText = data.message;
-                })
-                .catch(error => {
-                    document.getElementById('greeting').innerText = 'Unable to retrieve greeting.';
-                });
+        // --- LOCAL CRUD OPERATIONS ---
+        function addStudent() {
+            fetch('/api/students', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getFormData())
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('crudResult').innerHTML = `<p style="color:green;"><b>Success:</b> ${data.message} (ID: ${data.id})</p>`;
+                loadMyRecords();
+            })
+            .catch(() => {
+                document.getElementById('crudResult').innerHTML = '<p style="color:red;">Failed to add student.</p>';
+            });
         }
 
-        // Step 8: Fetch All Students from Database
-        function loadStudents() {
-            fetch('/students')
-                .then(response => response.json())
-                .then(data => {
-                    let output = '';
-                    data.forEach(student => {
-                        output +=
-                            '<p>' +
-                            '<b>' + student.student_id + '</b> - ' +
-                            student.name + ' | ' +
-                            student.program + ' | Year ' +
-                            student.year + ' | Section ' +
-                            student.section +
-                            '</p>';
-                    });
-                    document.getElementById('studentList').innerHTML = output;
-                })
-                .catch(error => {
-                    document.getElementById('studentList').innerHTML =
-                        '<p>Unable to retrieve student records.</p>';
-                });
+        function updateStudent() {
+            const dbId = document.getElementById('dbId').value;
+            if (!dbId) return alert('Enter a Database ID.');
+            fetch(`/api/students/${dbId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getFormData())
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('crudResult').innerHTML = `<p style="color:green;"><b>Success:</b> ${data.message}</p>`;
+                loadMyRecords();
+            })
+            .catch(() => {
+                document.getElementById('crudResult').innerHTML = '<p style="color:red;">Failed to update student.</p>';
+            });
         }
 
-        // Additional Task: Fetch Students Filtered by Year Level
-        function loadStudentsByYear() {
-            const year = document.getElementById('yearInput').value;
-            if (!year) {
-                document.getElementById('yearResult').innerText = 'Please enter a year level.';
+        function deleteStudent() {
+            const dbId = document.getElementById('dbId').value;
+            if (!dbId) return alert('Enter a Database ID.');
+            fetch(`/api/students/${dbId}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('crudResult').innerHTML = `<p style="color:red;"><b>Success:</b> ${data.message}</p>`;
+                loadMyRecords();
+            })
+            .catch(() => {
+                document.getElementById('crudResult').innerHTML = '<p style="color:red;">Failed to delete student.</p>';
+            });
+        }
+
+        // --- MY RECORDS (READ & SEARCH) ---
+        function loadMyRecords() {
+            fetch('/api/students')
+            .then(res => res.json())
+            .then(data => {
+                localStudentsData = data;
+                renderMyRecords(data);
+            })
+            .catch(() => {
+                document.getElementById('myRecordsList').innerHTML = '<p>Unable to load local records.</p>';
+            });
+        }
+
+        function renderMyRecords(students) {
+            if (students.length === 0) {
+                document.getElementById('myRecordsList').innerHTML = '<p>No records found.</p>';
                 return;
             }
-            fetch('/students/year/' + encodeURIComponent(year))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length === 0) {
-                        document.getElementById('yearResult').innerText = 'No records found for Year ' + year + '.';
-                        return;
-                    }
-                    let output = '';
-                    data.forEach(student => {
-                        output +=
-                            '<p>' +
-                            '<b>' + student.student_id + '</b> - ' +
-                            student.name + ' | ' +
-                            student.program + ' | Year ' +
-                            student.year + ' | Section ' +
-                            student.section +
-                            '</p>';
-                    });
-                    document.getElementById('yearResult').innerHTML = output;
-                })
-                .catch(error => {
-                    document.getElementById('yearResult').innerText = 'Unable to retrieve filtered records.';
-                });
+            let html = '';
+            students.forEach(s => {
+                html += `
+                <div class="record-item">
+                    <div>
+                        <b>[Local ID: ${s.id}]</b> ${s.student_id} - ${s.name} (${s.program})
+                    </div>
+                    <div>
+                        <button class="btn-secondary" onclick="viewLocalDetails(${s.id})">View Details</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('myRecordsList').innerHTML = html;
         }
+
+        function searchMyRecords() {
+            const query = document.getElementById('localSearchInput').value.toLowerCase();
+            const filtered = localStudentsData.filter(s => 
+                s.name.toLowerCase().includes(query) || 
+                s.student_id.toLowerCase().includes(query)
+            );
+            renderMyRecords(filtered);
+        }
+
+        function viewLocalDetails(id) {
+            const s = localStudentsData.find(item => item.id === id);
+            if (!s) return;
+            const detailBox = document.getElementById('localDetailBox');
+            detailBox.style.display = 'block';
+            detailBox.innerHTML = `
+                <h3>Local Record Details (ID: ${s.id})</h3>
+                <p><b>Student ID:</b> ${s.student_id}</p>
+                <p><b>Name:</b> ${s.name}</p>
+                <p><b>Program:</b> ${s.program}</p>
+                <p><b>Year:</b> ${s.year}</p>
+                <p><b>Section:</b> ${s.section}</p>
+            `;
+        }
+
+        // --- CLASSMATE'S RECORDS (FETCH & VIEW DETAILS) ---
+        function fetchClassmateRecords() {
+            const url = document.getElementById('classmateApiUrl').value.trim();
+            if (!url) return alert('Please enter your classmate\'s Render API URL.');
+
+            document.getElementById('classmateList').innerHTML = '<p>Loading remote records...</p>';
+
+            // Try direct fetch first; fallback to server proxy if CORS blocks it
+            fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error('Direct fetch failed');
+                return res.json();
+            })
+            .catch(() => {
+                // Proxy fallback via Flask server
+                return fetch(`/api/classmate-proxy?url=${encodeURIComponent(url)}`)
+                       .then(res => res.json());
+            })
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                classmateStudentsData = data;
+                renderClassmateRecords(data);
+            })
+            .catch(err => {
+                document.getElementById('classmateList').innerHTML = `<p style="color:red;">Error fetching classmate data: ${err.message}</p>`;
+            });
+        }
+
+        function renderClassmateRecords(students) {
+            if (!Array.isArray(students) || students.length === 0) {
+                document.getElementById('classmateList').innerHTML = '<p>No remote records found.</p>';
+                return;
+            }
+            let html = '';
+            students.forEach((s, idx) => {
+                html += `
+                <div class="record-item">
+                    <div>
+                        <span class="badge">Classmate Data</span> 
+                        <b>${s.student_id || 'N/A'}</b> - ${s.name || 'N/A'}
+                    </div>
+                    <div>
+                        <button class="btn-secondary" onclick="viewRemoteDetails(${idx})">View Remote Details</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('classmateList').innerHTML = html;
+        }
+
+        function viewRemoteDetails(index) {
+            const s = classmateStudentsData[index];
+            if (!s) return;
+            const detailBox = document.getElementById('remoteDetailBox');
+            detailBox.style.display = 'block';
+            detailBox.innerHTML = `
+                <h3>Classmate Record Details (Read-Only)</h3>
+                <p><b>Student ID:</b> ${s.student_id || 'N/A'}</p>
+                <p><b>Name:</b> ${s.name || 'N/A'}</p>
+                <p><b>Program:</b> ${s.program || 'N/A'}</p>
+                <p><b>Year:</b> ${s.year || 'N/A'}</p>
+                <p><b>Section:</b> ${s.section || 'N/A'}</p>
+            `;
+        }
+
+        // Auto load local records when the page loads
+        window.onload = loadMyRecords;
     </script>
 </body>
 </html>

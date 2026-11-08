@@ -3,7 +3,10 @@ import sqlite3
 conn = sqlite3.connect('students.db')
 cursor = conn.cursor()
 
-# Create students table
+# Drop table to apply the updated schema cleanly
+cursor.execute('DROP TABLE IF EXISTS students')
+
+# Create students table with 'source' column
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS students (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -11,28 +14,21 @@ CREATE TABLE IF NOT EXISTS students (
     name TEXT NOT NULL,
     program TEXT NOT NULL,
     year INTEGER NOT NULL,
-    section TEXT NOT NULL
+    section TEXT NOT NULL,
+    source TEXT DEFAULT 'Local'
 )
 ''')
 
-# Clear existing records to prevent duplication on rerun
-cursor.execute("DELETE FROM students")
-
-# 5 Realistic Student Records
-students = [
-    ('24-00246', 'Adrian Bunayos', 'BSIT', 3, 'A'),
-    ('24-00101', 'Maria Santos', 'BSIT', 1, 'A'),
-    ('24-00102', 'Juan Dela Cruz', 'BSIT', 1, 'B'),
-    ('24-00103', 'Jasmine Rose', 'BSIT', 2, 'A'),
-    ('24-00104', 'Pedro Reyes', 'BSIT', 3, 'B')
-]
-
+# Insert sample records (6 values per tuple matching 6 columns)
 cursor.executemany('''
-INSERT INTO students (student_id, name, program, year, section)
-VALUES (?, ?, ?, ?, ?)
-''', students)
+INSERT INTO students (student_id, name, program, year, section, source)
+VALUES (?, ?, ?, ?, ?, ?)
+''', [
+    ('2026-0001', 'Juan Dela Cruz', 'BSIT', 3, 'A', 'Local'),
+    ('2026-0002', 'Maria Santos', 'BSCS', 2, 'B', 'Local'),
+    ('24-00104', 'Pedro Reyes', 'BSIT', 3, 'B', 'Local')
+])
 
 conn.commit()
 conn.close()
-
-print("Database created successfully.")
+print("Database initialized successfully.")

@@ -25,6 +25,7 @@ INSERT INTO students (student_id, name, program, year, section, source)
 VALUES (?, ?, ?, ?, ?, ?)
 ''', [
     ('2026-0001', 'Juan Dela Cruz', 'BSIT', 3, 'A', 'Local'),
+    ('24-00123', 'Sean Dalmacio', 'BSIT', 3, 'A', 'Local' ),
     ('2026-0002', 'Maria Santos', 'BSCS', 2, 'B', 'Local'),
     ('24-00104', 'Pedro Reyes', 'BSIT', 3, 'B', 'Local')
 ])

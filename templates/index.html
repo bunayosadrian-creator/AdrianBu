@@ -1,125 +1,321 @@
-let partnerDataCache = [];
-let localSavedIds = new Set(); // Store local student IDs to check for duplicates
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 10 - AWS Integration Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 24px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #0d47a1;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .card-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #1a237e;
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .badge-local { background-color: #1565c0; }
+        .badge-imported { background-color: #ef6c00; }
+        .badge-partner { background-color: #6a1b9a; }
 
-document.addEventListener('DOMContentLoaded', loadLocalDatabase);
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #0d47a1;
+            color: #ffffff;
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.92rem;
+        }
+        tr:hover {
+            background-color: #f8fafc;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .btn-fetch {
+            background-color: #00796b;
+            color: #ffffff;
+            padding: 10px 16px;
+        }
+        .btn-fetch:hover { background-color: #00695c; }
+        .btn-save {
+            background-color: #2e7d32;
+            color: #ffffff;
+        }
+        .btn-save:hover { background-color: #1b5e20; }
+        .btn-saved {
+            background-color: #6c757d;
+            color: #ffffff;
+            cursor: not-allowed;
+            opacity: 0.85;
+        }
+        .btn-delete {
+            background-color: #c62828;
+            color: #ffffff;
+        }
+        .btn-delete:hover { background-color: #b71c1c; }
+        .empty-msg {
+            text-align: center;
+            color: #666;
+            padding: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lab 10 - AWS Lightsail Integration Dashboard</h1>
 
-// 1. Load Local Database & Track Existing Student IDs
-function loadLocalDatabase() {
-    fetch('/api/students')
-        .then(res => res.json())
-        .then(data => {
-            const localBody = document.getElementById('local-records-body');
-            const importedBody = document.getElementById('imported-records-body');
-            localBody.innerHTML = '';
-            importedBody.innerHTML = '';
-            
-            // Clear and rebuild set of saved IDs
-            localSavedIds.clear();
+        <!-- Local Records -->
+        <div class="card">
+            <div class="card-header">
+                <h2>My Local Records</h2>
+                <span class="badge badge-local">Source: Local</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Program</th>
+                        <th>Year</th>
+                        <th>Section</th>
+                        <th>Source</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="local-records-body"></tbody>
+            </table>
+        </div>
 
-            data.forEach(student => {
-                localSavedIds.add(student.student_id);
+        <!-- Imported Records -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Imported &amp; Externally Received Records</h2>
+                <span class="badge badge-imported">Persisted Remote Data</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Program</th>
+                        <th>Year</th>
+                        <th>Section</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody id="imported-records-body"></tbody>
+            </table>
+        </div>
 
-                if (student.source === 'Local') {
-                    localBody.innerHTML += `
-                        <tr>
-                            <td>${student.id}</td>
-                            <td>${student.student_id}</td>
-                            <td>${student.name}</td>
-                            <td>${student.program}</td>
-                            <td>${student.year}</td>
-                            <td>${student.section}</td>
-                            <td><span class="badge badge-local">${student.source}</span></td>
-                            <td>
-                                <button class="btn btn-delete" onclick="deleteStudent(${student.id})">Delete</button>
-                            </td>
-                        </tr>`;
-                } else {
-                    importedBody.innerHTML += `
-                        <tr>
-                            <td>${student.id}</td>
-                            <td>${student.student_id}</td>
-                            <td>${student.name}</td>
-                            <td>${student.program}</td>
-                            <td>${student.year}</td>
-                            <td>${student.section}</td>
-                            <td><span class="badge badge-imported">${student.source}</span></td>
-                        </tr>`;
-                }
-            });
+        <!-- Partner Live Records -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Partner Records</h2>
+                <span class="badge badge-partner">Remote Live View (Read-Only)</span>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="partner-url-input" placeholder="http://PARTNER-STATIC-IP/api/students">
+                <button class="btn btn-fetch" onclick="fetchPartnerRecords()">Retrieve Partner Records</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Program</th>
+                        <th>Year</th>
+                        <th>Section</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="partner-records-body">
+                    <tr>
+                        <td colspan="6" class="empty-msg">Enter partner AWS API URL above to fetch remote records.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-            // Re-render partner table if partner data is active
-            if (partnerDataCache.length > 0) {
-                renderPartnerTable();
-            }
-        });
-}
+    <script>
+        let partnerDataCache = [];
+        let localSavedIds = new Set();
 
-// 2. Fetch Partner Records
-function fetchPartnerRecords() {
-    const url = document.getElementById('partner-url-input').value.trim();
-    if (!url) return alert("Please enter partner URL");
+        document.addEventListener('DOMContentLoaded', loadLocalDatabase);
 
-    fetch(`/partner-records?url=${encodeURIComponent(url)}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) throw new Error(data.error);
-            partnerDataCache = data;
-            renderPartnerTable();
-        })
-        .catch(err => alert("Error: " + err.message));
-}
+        function loadLocalDatabase() {
+            fetch('/api/students')
+                .then(res => res.json())
+                .then(data => {
+                    const localBody = document.getElementById('local-records-body');
+                    const importedBody = document.getElementById('imported-records-body');
+                    localBody.innerHTML = '';
+                    importedBody.innerHTML = '';
+                    localSavedIds.clear();
 
-// 3. Render Partner Table with Saved Button Logic
-function renderPartnerTable() {
-    const tbody = document.getElementById('partner-records-body');
-    tbody.innerHTML = '';
+                    data.forEach(student => {
+                        localSavedIds.add(student.student_id);
 
-    partnerDataCache.forEach((student, index) => {
-        const isAlreadySaved = localSavedIds.has(student.student_id);
+                        if (student.source === 'Local') {
+                            localBody.innerHTML += `
+                                <tr>
+                                    <td>${student.id}</td>
+                                    <td>${student.student_id}</td>
+                                    <td>${student.name}</td>
+                                    <td>${student.program}</td>
+                                    <td>${student.year}</td>
+                                    <td>${student.section}</td>
+                                    <td><span class="badge badge-local">${student.source}</span></td>
+                                    <td>
+                                        <button class="btn btn-delete" onclick="deleteStudent(${student.id})">Delete</button>
+                                    </td>
+                                </tr>`;
+                        } else {
+                            importedBody.innerHTML += `
+                                <tr>
+                                    <td>${student.id}</td>
+                                    <td>${student.student_id}</td>
+                                    <td>${student.name}</td>
+                                    <td>${student.program}</td>
+                                    <td>${student.year}</td>
+                                    <td>${student.section}</td>
+                                    <td><span class="badge badge-imported">${student.source}</span></td>
+                                </tr>`;
+                        }
+                    });
 
-        tbody.innerHTML += `
-            <tr>
-                <td>${student.student_id}</td>
-                <td>${student.name}</td>
-                <td>${student.program}</td>
-                <td>${student.year}</td>
-                <td>${student.section}</td>
-                <td>
-                    ${isAlreadySaved 
-                        ? `<button class="btn btn-saved" disabled>Saved ✓</button>`
-                        : `<button class="btn btn-save" onclick="importPartnerRecord(${index}, this)">Save to My Database</button>`
+                    if (partnerDataCache.length > 0) {
+                        renderPartnerTable();
                     }
-                </td>
-            </tr>`;
-    });
-}
+                });
+        }
 
-// 4. Save Selected Partner Record with UI State Update
-function importPartnerRecord(index, btnElement) {
-    const student = partnerDataCache[index];
+        function deleteStudent(id) {
+            fetch(`/api/students/${id}`, { method: 'DELETE' })
+                .then(() => loadLocalDatabase())
+                .catch(err => alert("Error deleting record: " + err));
+        }
 
-    // Show visual loading state immediately
-    btnElement.innerText = "Saving...";
-    btnElement.disabled = true;
+        function fetchPartnerRecords() {
+            const url = document.getElementById('partner-url-input').value.trim();
+            if (!url) return alert("Please enter partner URL");
 
-    fetch('/import-student', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(student)
-    })
-    .then(res => res.json())
-    .then(data => {
-        // Change button to Saved permanently
-        btnElement.innerText = "Saved ✓";
-        btnElement.className = "btn btn-saved";
-        btnElement.disabled = true;
+            fetch(`/partner-records?url=${encodeURIComponent(url)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+                    partnerDataCache = data;
+                    renderPartnerTable();
+                })
+                .catch(err => alert("Error: " + err.message));
+        }
 
-        // Refresh local tables
-        loadLocalDatabase();
-    })
-    .catch(err => {
-        alert("Failed to save record: " + err);
-        btnElement.innerText = "Save to My Database";
-        btnElement.disabled = false;
-    });
-}
+        function renderPartnerTable() {
+            const tbody = document.getElementById('partner-records-body');
+            tbody.innerHTML = '';
+
+            partnerDataCache.forEach((student, index) => {
+                const isAlreadySaved = localSavedIds.has(student.student_id);
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${student.student_id}</td>
+                        <td>${student.name}</td>
+                        <td>${student.program}</td>
+                        <td>${student.year}</td>
+                        <td>${student.section}</td>
+                        <td>
+                            ${isAlreadySaved
+                                ? `<button class="btn btn-saved" disabled>Saved ✓</button>`
+                                : `<button class="btn btn-save" onclick="importPartnerRecord(${index}, this)">Save to My Database</button>`
+                            }
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function importPartnerRecord(index, btnElement) {
+            const student = partnerDataCache[index];
+            btnElement.innerText = "Saving...";
+            btnElement.disabled = true;
+
+            fetch('/import-student', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(student)
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnElement.innerText = "Saved ✓";
+                btnElement.className = "btn btn-saved";
+                btnElement.disabled = true;
+                loadLocalDatabase();
+            })
+            .catch(err => {
+                alert("Failed to save record: " + err);
+                btnElement.innerText = "Save to My Database";
+                btnElement.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
